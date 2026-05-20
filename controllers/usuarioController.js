@@ -1,4 +1,4 @@
-const { buscarTodos, buscarUm, atualizar, inserir, deletar } = require('../models/contato');
+const { buscarTodos, buscarUm, atualizar, inserir, deletar } = require('../models/usuario');
 
 exports.listaContato = async (req, res) => {
     let result = await buscarTodos()

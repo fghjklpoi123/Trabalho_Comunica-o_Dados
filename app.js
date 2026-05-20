@@ -7,9 +7,9 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 
 const corsConfig = {
-    origin: '*', //local de onde pode receber requisao
-    method: ['POST', 'GET'], // metodo permitido
-    allowedHead: ['Content-Type', 'Authorization'] //cabeçcario permitido
+    origin: '*', 
+    method: ['POST', 'GET'], 
+    allowedHead: ['Content-Type', 'Authorization'] 
 }
 app.use(cors(corsConfig));
 
@@ -22,18 +22,7 @@ app.use(bodyParser.urlencoded({
     extended: true
 }))
 
-app.get('/', function(req, res){
-    res.send('Olá mundo');
-})
-app.get('/sobre', function(req, res){
-    res.send('Olá sobre');
-})
-app.get('/sobre/:id', function(req, res){
-    const id = req.params.id;
-    res.send(`Olá sobre ${id}` + '-' + id);
-})
-
-const contatoRoute = require('./routes/contatoRoute');
+const contatoRoute = require('./routes/usuarioRoute');
 app.use('/', contatoRoute);
 
 const PORT = process.env.PORT || 3000;

@@ -22,11 +22,11 @@ app.use(bodyParser.urlencoded({
     extended: true
 }))
 
-const contatoRoute = require('./routes/usuarioRoute');
-app.use('/', contatoRoute);
+const usuarioRoute = require('./routes/usuarioRoute');
+app.use('/', usuarioRoute);
 
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
-    console.log('http://localhost:'+PORT);
+    console.log('http://localhost:'+ PORT);
 })

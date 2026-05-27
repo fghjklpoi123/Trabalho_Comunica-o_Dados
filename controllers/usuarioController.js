@@ -1,88 +1,121 @@
-const { buscarTodos, buscarUm, atualizar, inserir, deletar } = require('../models/usuario');
+const { buscarTodos, buscarUm, atualizar, inserir, deletar, buscarPorEmail } = require('../models/usuario');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 
-exports.listaContato = async (req, res) => {
-    let result = await buscarTodos()
-    res.json(result);
-}
+exports.register = async (req, res) => {
+    try {
+        const { nome, email, senha } = req.body;
+
+        if (!nome || !email || !senha) {
+            return res.status(400).json({ error: 'Nome, email e senha são obrigatórios' });
+        }
+
+        const senhaHash = await bcrypt.hash(senha, 10);
+        const novoId = await inserir(nome, email, senhaHash);
+
+        res.status(201).json({ id: novoId, nome, email });
+    } catch (error) {
+        if (error.code === 'ER_DUP_ENTRY') {
+            return res.status(409).json({ error: 'Email já cadastrado' });
+        }
+        res.status(500).json({ error: 'Erro ao registrar usuário' });
+    }
+};
+
+exports.login = async (req, res) => {
+    try {
+        const { email, senha } = req.body;
+
+        if (!email || !senha) {
+            return res.status(400).json({ error: 'Email e senha são obrigatórios' });
+        }
+
+        const usuario = await buscarPorEmail(email);
+
+        if (!usuario) {
+            return res.status(401).json({ error: 'Credenciais inválidas' });
+        }
+
+        const senhaValida = await bcrypt.compare(senha, usuario.senha);
+
+        if (!senhaValida) {
+            return res.status(401).json({ error: 'Credenciais inválidas' });
+        }
+
+        const token = jwt.sign(
+            { id: usuario.id, email: usuario.email },
+            process.env.JWT_SECRET,
+            { expiresIn: '1m' }
+        );
+
+        res.json({ token });
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao fazer login' });
+    }
+};
+
+exports.listaUsuarios = async (req, res) => {
+    try {
+        const result = await buscarTodos();
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao buscar usuários' });
+    }
+};
 
 exports.buscarUm = async (req, res) => {
-    let id = req.params.id;
-    let result = await buscarUm(id);
-    res.json(result);
-}
-
-exports.inserir = async (req, res) => {
-    console.log(req.body)
     try {
-        const { name } = req.body;
-        if (!name) {
-            return res.status(400).json({
-                error: 'Nome obrigatorio'
-            });
+        const { id } = req.params;
+        const result = await buscarUm(id);
+        if (!result) {
+            return res.status(404).json({ error: 'Usuário não encontrado' });
         }
-        const novoId = await inserir(name);
-        res.json({
-            id: novoId, name: name
-        })
+        res.json(result);
     } catch (error) {
-        res.status(500).json({ error: 'Error ao inserir contato' });
+        res.status(500).json({ error: 'Erro ao buscar usuário' });
     }
-}
+};
 
 exports.update = async (req, res) => {
     try {
         const { id } = req.params;
-        const { name } = req.body;
+        const { nome, email } = req.body;
 
-        // Validações
         if (!id || isNaN(id)) {
-            return res.status(400).json({
-                error: 'ID inválido'
-            });
+            return res.status(400).json({ error: 'ID inválido' });
         }
 
-        if (!name || name.trim() === '') {
-            return res.status(400).json({
-                error: 'Nome obrigatório e não pode estar vazio'
-            });
+        if (!nome || nome.trim() === '') {
+            return res.status(400).json({ error: 'Nome obrigatório e não pode estar vazio' });
         }
 
-        const resultado = await atualizar(id, name);
-        
+        if (!email || email.trim() === '') {
+            return res.status(400).json({ error: 'Email obrigatório e não pode estar vazio' });
+        }
+
+        const resultado = await atualizar(id, nome, email);
+
         if (resultado.affectedRows === 0) {
-            return res.status(404).json({
-                error: 'Contato não encontrado'
-            });
+            return res.status(404).json({ error: 'Usuário não encontrado' });
         }
 
-        res.status(200).json({
-            message: 'Contato atualizado com sucesso',
-            id: parseInt(id),
-            name: name
-        });
-
+        res.status(200).json({ message: 'Usuário atualizado com sucesso', id: parseInt(id), nome, email });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Erro ao atualizar contato' });
+        res.status(500).json({ error: 'Erro ao atualizar usuário' });
     }
-}
+};
 
 exports.remove = async (req, res) => {
     try {
-        let id = req.params.id;
+        const { id } = req.params;
 
         if (!id) {
-            return res.status(400).json({
-                error: 'ID não encontrado'
-            });
+            return res.status(400).json({ error: 'ID não encontrado' });
         }
 
         await deletar(id);
-        res.json({
-            message: 'Contato deletado com sucesso'
-        });
-
+        res.json({ message: 'Usuário deletado com sucesso' });
     } catch (error) {
-        res.status(500).json({ error: 'Error ao deletar contato' });
+        res.status  (500).json({ error: 'Erro ao deletar usuário' });
     }
-}
+};

@@ -30,3 +30,13 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log('http://localhost:'+ PORT);
 })
+
+const path = require('path');
+
+// Serve arquivos estáticos (HTML, CSS, JS)
+app.use(express.static(path.join(__dirname)));
+
+// Rota raiz → abre o index.html
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
